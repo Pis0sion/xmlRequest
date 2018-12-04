@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>hello world</title>
+    <script src=”http://libs.baidu.com/jquery/2.1.1/jquery.min.js”></script>
+</head>
+<body>
+<input type="file" onchange="uploadFile(this,'.canvas1','http://www.gaoqiaoxue.com/api/v1/image')">
+<input type="file" onchange="uploadFile(this,'.canvas2','http://www.gaoqiaoxue.com/api/v1/image')">
+<hr>
+<!--<div>800*449</div>-->
+<!--<img src="" alt="">-->
+<!--<hr>-->
+<!--<div>400*224</div>-->
+<canvas class="canvas1"></canvas>
+<canvas class="canvas2"></canvas>
+<script>
+
+    /**
+     * 上传图片并压缩
+     * @param thisObj   inputobj
+     * @param canvasId   对应的canvas
+     * @param requestUrl   请求地址
+     */
+    function uploadFile(thisObj,canvasId,requestUrl)
+    {
+        // let img = document.querySelector('img');
+        let img = new Image();
+        let cvs = document.querySelector(canvasId);
+        // let cvs = document.createElement('canvas');
+
+        let file = thisObj.files[0];
+
+        let reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function (e) {
+            let naturalBase64 = e.target.result;
+            img.src = naturalBase64;
+            img.onload = function () {
+                if(file && (file.size/1024 > 500)){
+                    let ratio = img.naturalWidth/img.naturalHeight;
+                    cvs.width = 600;
+                    cvs.height = cvs.width / ratio;
+                }else{
+                    cvs.width = img.naturalWidth;
+                    cvs.height = img.naturalHeight;
+                }
+                let ctx = cvs.getContext('2d');
+                ctx.drawImage(img,0,0,cvs.width,cvs.height);
+                let zipBase64 = cvs.toDataURL();
+                let fileobj = dataURLtoFile(zipBase64,"test.jpg");
+                var formData = new FormData();
+                formData.append("uid","673");
+                formData.append("idcardFront",fileobj);
+                xmlRequest(requestUrl,formData,reqListener);
+            }
+        }
+    }
+    /**
+     * 计算文件的大小
+     * @param baseStr   base64 字符串
+     */
+    function calcBase(baseStr)
+    {
+        var tag = "base64";
+        baseStr = baseStr.substring(baseStr.indexOf(tag) + tag.length);
+        var eqTagIndex = baseStr.indexOf("=");
+        baseStr = eqTagIndex != -1 ? baseStr.substring(0,eqTagIndex) : baseStr;
+        var strLen = baseStr.length ;
+        var fileSize = strLen - (strLen/8)*2 ;
+        console.log("文件大小:"+(fileSize/1024).toFixed(1)+"KB");
+    }
+    /**
+     * 将base64转换为文件
+     * @param dataurl  base64 串
+     * @param filename   压缩后的文件名称
+     * @returns {File}    fileobj
+     */
+    function dataURLtoFile(dataurl, filename)
+    {
+        var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, {type:mime});
+    }
+    /**
+     * xml 请求
+     * @param url    请求地址
+     * @param data    请求数据
+     * @param callback   xml监听事件
+     */
+    function xmlRequest(url,data,callback)
+    {
+        var request = new XMLHttpRequest();
+        request.addEventListener("load", callback);
+        request.open("POST",url);
+        request.send(data);
+    }
+    // xml监听事件
+    function reqListener () {
+        alert(this.responseText);
+        console.log(this.responseText);
+    }
+
+
+</script>
+
+</body>
+</html>
